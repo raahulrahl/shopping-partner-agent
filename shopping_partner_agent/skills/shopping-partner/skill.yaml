@@ -5,20 +5,16 @@ author: paras@getbindu.com
 
 # Description
 description: |
-  Analyzes user shopping requirements to discover, compare, and recommend products
-  from verified e-commerce platforms. Evaluates features, pricing, reviews,
-  availability, and trust signals to provide structured recommendations with
-  match scoring and safety validation.
+  AI-powered product recommendation agent that searches e-commerce platforms
+  and provides structured product recommendations based on user requirements.
+  Uses LLM-based analysis with web search tools to find and compare products.
 
 # Tags and Modes
 tags:
   - shopping
   - product-recommendation
   - e-commerce
-  - comparison
-  - consumer-advice
-  - price-analysis
-  - trusted-sources
+  - web-search
 
 input_modes:
   - text/plain
@@ -30,207 +26,186 @@ output_modes:
 
 # Example Queries
 examples:
-  - "Find running shoes under $150 for long-distance training"
-  - "Recommend a laptop for programming with 16GB RAM and 512GB SSD"
-  - "Best smartphone with good camera under $800"
-  - "Compare espresso machines between $200 and $400"
-  - "Gift ideas for a 10-year-old interested in robotics"
+  - "Recommend a laptop for programming with 16GB RAM and 512GB SSD under ₹80,000"
+  - "Best smartphone with good camera under ₹40,000 in India"
+  - "Find running shoes under $150"
+  - "Compare wireless headphones under $200"
 
 # Detailed Capabilities
 capabilities_detail:
   primary_capability:
     supported: true
-    description: "Provides structured product discovery and recommendation analysis"
+    description: "Searches web for products and provides LLM-generated recommendations"
     features:
-      - "Matches products against user-defined requirements"
-      - "Calculates match score (0–1 scale)"
-      - "Evaluates price-to-value positioning"
-      - "Verifies availability status"
-      - "Analyzes user reviews and ratings"
-      - "Provides trusted source validation"
-    limitations: "Real-time inventory and pricing may vary; recommendations are advisory and not purchase guarantees"
+      - "Web search via DuckDuckGo or Exa API"
+      - "LLM-based product analysis and matching"
+      - "Structured markdown output with product details"
+      - "Match score calculation (percentage-based)"
+      - "Trusted source filtering (Amazon, Flipkart, Google Shopping, etc.)"
+    limitations: "Recommendations based on web search results; actual pricing and availability depend on search results quality; no direct API integration with e-commerce platforms"
 
   secondary_capability:
     supported: true
-    description: "Provides comparative analysis and summarized buying guidance"
+    description: "Optional memory storage for user preferences"
     features:
-      - "Generates side-by-side product comparisons"
-      - "Summarizes pros and cons"
-      - "Provides price range insights"
-      - "Assigns trust score (0–1 scale)"
-      - "Suggests alternatives if constraints are too restrictive"
+      - "Mem0 integration for storing user preferences (if MEM0_API_KEY provided)"
+    limitations: "Memory features only available when MEM0_API_KEY is configured"
 
 # Requirements
 requirements:
   packages:
     - "agno"
-    - "openai or openrouter"
-    - "duckduckgo-search or exa-py"
-    - "mem0"
+    - "openai (if using OPENAI_API_KEY) or openrouter (if using OPENROUTER_API_KEY)"
+    - "duckduckgo-search (default) or exa-py (if EXA_API_KEY provided)"
+    - "mem0 (optional, requires MEM0_API_KEY)"
+    - "bindu-penguin"
+    - "python-dotenv"
   system:
-    - "Internet access for product verification"
-  min_memory_mb: 384
+    - "Internet access for web search"
+  api_keys:
+    - "OPENAI_API_KEY or OPENROUTER_API_KEY (required, at least one)"
+    - "EXA_API_KEY (optional, falls back to DuckDuckGo)"
+    - "MEM0_API_KEY (optional, for memory features)"
+  min_memory_mb: 256
 
 # Performance Metrics
 performance:
-  avg_processing_time_ms: 4000
-  max_concurrent_requests: 6
-  memory_per_request_mb: 384
-  scalability: horizontal
+  avg_processing_time_ms: "Varies based on LLM and search API response times"
+  max_concurrent_requests: "Not enforced in code"
+  memory_per_request_mb: "Depends on LLM model"
+  scalability: "Single agent instance per deployment"
 
 # Tool Restrictions
 allowed_tools:
-  - Read
-  - Write
-  - Execute
-  - Search
-  - Analyze
-  - Compare
-  - Recommend
-  - Verify
+  - "DuckDuckGoTools (default search)"
+  - "ExaTools (if EXA_API_KEY provided)"
+  - "Mem0Tools (if MEM0_API_KEY provided)"
 
 # Rich Documentation
 documentation:
   overview: |
-    This skill acts as an AI-powered personal shopping assistant.
-    It analyzes user preferences, budget constraints, and product requirements
-    to generate structured recommendations from verified sources.
+    This agent uses an LLM (GPT-4o or OpenRouter models) combined with web search
+    tools to find and recommend products. It searches specified e-commerce platforms
+    and generates structured recommendations in markdown format.
 
-    Outputs include ranked product recommendations, match scores,
-    availability indicators, comparison summaries, and trust validation.
-    Designed for informed purchase decision support.
+    The agent enforces a minimum 50% match threshold and prioritizes trusted sources
+    like Amazon, Flipkart, Myntra, Meesho, Google Shopping, and Nike.
 
   use_cases:
     when_to_use:
+      - "Product discovery based on user requirements"
+      - "Comparing products from web search results"
+      - "Getting structured product recommendations with match scores"
       - "Finding products within budget constraints"
-      - "Comparing products before purchase"
-      - "Matching features to user requirements"
-      - "Verifying product availability and trust signals"
-      - "Identifying alternatives when preferences are restrictive"
-      - "Gift discovery based on interest and budget"
 
     when_not_to_use:
+      - "Real-time inventory verification (depends on search results)"
       - "Placing orders or processing payments"
-      - "Managing inventory or seller listings"
-      - "Real-time price tracking over time"
+      - "Price tracking over time"
       - "Customer service or order tracking"
-      - "Product manufacturing or supply chain analysis"
+      - "Guaranteed pricing accuracy (search results may be outdated)"
 
   input_structure: |
-    Accepts shopping queries in plain text or structured JSON format.
+    Accepts natural language queries via JSON-RPC message/send endpoint.
 
-    Example (Plain Text):
-    "Recommend wireless headphones under $200 with noise cancellation"
-
-    Example (JSON):
+    Message format:
     {
-      "query": "Laptop for programming",
-      "budget_min": 1000,
-      "budget_max": 2000,
-      "currency": "USD",
-      "preferences": {
-        "brands": ["Dell", "Lenovo"],
-        "features": ["16GB RAM", "512GB SSD"],
-        "exclude_features": ["refurbished"]
-      },
-      "urgency": "low|medium|high"
+      "role": "user",
+      "parts": [{"kind": "text", "text": "Your shopping query"}]
     }
 
-    Constraints:
-    - Maximum 15 product recommendations per query
-    - English language
-    - Advisory recommendations only (no transaction execution)
+    The agent processes plain text queries describing product requirements,
+    budget, features, and preferences.
 
   output_format: |
-    Returns structured product recommendations.
+    Returns markdown-formatted recommendations with the following structure:
 
-    Output Structure:
-    - SUMMARY:
-      - Total products analyzed
-      - Products recommended
-      - Average match score (0–1)
-      - Price range overview
-      - Trust score (0–1)
-    - RECOMMENDATIONS: For each product:
-      - Product name
-      - Brand
-      - Price and currency
-      - Match score (0–1)
-      - Availability status
-      - Key features
-      - Pros
-      - Cons
-      - Rating and review count
-    - ALTERNATIVES:
-      - Suggested fallback options if constraints unmet
-    - CONFIDENCE SCORE:
-      - 0–1 scale reflecting data reliability
+    # Shopping Recommendations 🛍️
+
+    ## Search Summary
+    - User Requirements
+    - Search Criteria
+    - Trusted Sources
+    - Match Threshold (minimum 50%)
+
+    ## Top Recommendations
+
+    ### Product N: {Product Name}
+    **Match Score**: XX% ✅
+    **Price**: {Price with currency}
+    **Brand**: {Brand Name}
+    **Source**: {Platform}
+
+    **Key Features:**
+    - Feature list
+
+    **Why It Matches:**
+    - Matching criteria
+
+    **Availability**: Status indicator
+    **Link**: Purchase URL
+
+    ## Alternative Options
+    - Additional suggestions if needed
+
+    ## Safety & Trust Notes
+    - Source verification notes
+    - Purchase disclaimers
+
+    ## Next Steps
+    - Suggested user actions
 
   error_handling:
-    - "No products found: Suggests alternative search strategy"
-    - "Budget constraints too restrictive: Recommends budget adjustment"
-    - "Unavailable product: Provides alternative recommendations"
-    - "Ambiguous requirements: Requests clarification"
-    - "API timeout: Returns partial recommendations with notice"
+    - "Missing API keys: Raises ValueError with setup instructions"
+    - "Agent not initialized: Raises RuntimeError"
+    - "Search failures: Depends on underlying tool error handling"
 
   examples:
-    - title: "Programming Laptop Search"
+    - title: "Laptop Search (India)"
       input:
-        query: "Laptop for programming with 16GB RAM and 512GB SSD"
-        budget_min: 1000
-        budget_max: 2000
+        query: "Recommend the best laptop under ₹80,000 for software development and light gaming in India"
       output:
-        summary: "5 products recommended within budget"
-        average_match_score: 0.84
-        trust_score: 0.90
-        processing_time_ms: 4200
+        format: "Markdown with 3 product recommendations, match scores, pricing, features, pros/cons"
 
-    - title: "Smartphone Recommendation"
+    - title: "Smartphone Search (India)"
       input:
-        query: "Smartphone with excellent camera under $800"
+        query: "Best smartphone under ₹40,000 with excellent camera, 5G, AMOLED display"
       output:
-        summary: "4 products meet requirements"
-        average_match_score: 0.79
-        trust_score: 0.87
-        processing_time_ms: 3800
+        format: "Markdown with 3 product recommendations, detailed feature breakdown, availability"
 
   best_practices:
     for_developers:
-      - "Prioritize verified and reputable sources"
-      - "Maintain transparent match scoring methodology"
-      - "Limit recommendations to high-confidence matches"
-      - "Implement fallback search if primary API fails"
-      - "Cache popular queries for performance optimization"
+      - "Set either OPENAI_API_KEY or OPENROUTER_API_KEY before running"
+      - "Configure EXA_API_KEY for better search results (optional)"
+      - "Enable MEM0_API_KEY for user preference memory (optional)"
+      - "Agent initializes lazily on first request"
 
     for_orchestrators:
-      - "Route shopping and product recommendation queries here"
-      - "Chain with budget analysis agent if financial planning needed"
-      - "Limit concurrency to 6 requests"
-      - "Implement 30-second timeout with retry logic"
-      - "Fallback to general search for simple product lookups"
+      - "Route shopping and product queries to this agent"
+      - "Expect async task processing (submitted → completed states)"
+      - "Response includes markdown-formatted recommendations"
+      - "No built-in concurrency limits or rate limiting"
 
   installation: |
-    Required packages:
-    pip install agno openai duckduckgo-search mem0
+    Install dependencies:
+    pip install agno openai duckduckgo-search bindu-penguin python-dotenv
 
     Optional:
-    pip install exa-py
+    pip install exa-py mem0
 
-    Environment variables:
-    - OPENAI_API_KEY or OPENROUTER_API_KEY
-    - EXA_API_KEY (optional)
-    - MEM0_API_KEY (optional)
+    Required environment variables:
+    - OPENAI_API_KEY (for OpenAI GPT-4o) OR
+    - OPENROUTER_API_KEY (for OpenRouter models)
+    - MODEL_NAME (optional, default: "openai/gpt-4o")
+
+    Optional environment variables:
+    - EXA_API_KEY (for Exa search, falls back to DuckDuckGo)
+    - MEM0_API_KEY (for memory features)
 
   versioning:
     - version: "1.0.0"
       date: "2026-01-13"
-      changes: "Initial release with structured product recommendation and scoring"
-    - version: "1.1.0"
-      status: "planned"
-      changes: "Add price trend analysis and deal detection"
-    - version: "1.2.0"
-      status: "planned"
-      changes: "Enhanced personalization via preference learning"
+      changes: "Initial implementation with Agno agent, web search tools, and markdown output"
 
 # Assessment fields for skill negotiation
 assessment:
@@ -243,18 +218,16 @@ assessment:
     - "compare"
     - "price"
     - "budget"
-    - "availability"
+    - "laptop"
+    - "smartphone"
     - "gift"
-    - "e-commerce"
 
   specializations:
-    - domain: "electronics shopping"
-      confidence_boost: 0.4
-    - domain: "fashion shopping"
+    - domain: "general product search"
       confidence_boost: 0.3
-    - domain: "home appliances"
-      confidence_boost: 0.3
-    - domain: "gift discovery"
+    - domain: "electronics"
+      confidence_boost: 0.2
+    - domain: "budget-based recommendations"
       confidence_boost: 0.2
 
   anti_patterns:
@@ -262,21 +235,18 @@ assessment:
     - "place order"
     - "track shipment"
     - "manage inventory"
-    - "create product listing"
-    - "customer service request"
+    - "real-time price monitoring"
+    - "guaranteed stock verification"
 
   complexity_indicators:
     simple:
-      - "price check"
-      - "availability check"
-      - "basic product info"
+      - "single product search"
+      - "basic requirements"
     medium:
       - "product comparison"
-      - "feature filtering"
-      - "brand selection"
+      - "feature-based filtering"
+      - "budget constraints"
     complex:
       - "multi-criteria matching"
-      - "budget optimization"
+      - "detailed comparisons"
       - "alternative suggestions"
-      - "trust verification"
-      - "comprehensive comparison"
